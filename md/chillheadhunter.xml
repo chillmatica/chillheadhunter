@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="ChillHeadHunter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
     <cues>
+        <cue name="OnLuaLoaderReady">
+            <conditions>
+                <event_ui_triggered screen="'Lua_Loader'" control="'Ready'"/>
+            </conditions>
+            <actions>
+                <!-- kuertee_menu_map was removed in newer UI extensions; skip loading it to avoid noisy module-not-found errors -->
+                <raise_lua_event name="'Lua_Loader.Load'" param="'extensions.chillheadhunter.ch'"/>
+            </actions>
+        </cue>
+
+        <cue name="OnLuaLoaderReadyCompleted">
+            <conditions>
+                <event_cue_completed cue="OnLuaLoaderReady"/>
+            </conditions>
+            <actions>
+                <reset_cue cue="OnLuaLoaderReady"/>
+                <reset_cue cue="this"/>
+            </actions>
+        </cue>
+
         <cue name="LoadStuffAndSetup" version="7">
 			<conditions>
 				<event_universe_generated/>

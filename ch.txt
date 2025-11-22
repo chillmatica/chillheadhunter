@@ -1,0 +1,466 @@
+local ffi = require("ffi")
+local C = ffi.C
+local Lib = require("extensions.sn_mod_support_apis.lua_interface").Library
+
+-- reduce log spam in production: only show engine/real errors; suppress debug traces
+local isDebug = false
+local playerId = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
+
+local mapMenu
+
+local config = {
+    mode = "headhunter",
+
+    blackboard = {
+        wantedShipsList = "$headhunterWantedShips",
+    },
+
+    icon = {
+        width = 18,
+        height = 18,
+    },
+
+    maxShips = 50;
+
+    settingsTable = {
+        columnsNumber = 3,
+        sortStates = {
+            location = 'all',
+            faction = 'all',
+            type = 2001,
+        }
+    },
+
+    bountiesTable = {
+        columnsNumber = 5,
+    },
+
+    dropdownOptions = {
+        location = {
+            { id = 'all', text = ReadText(8008574, 210), icon = "", displayremoveoption = false },
+            { id = 'known', text = ReadText(8008574, 211), icon = "", displayremoveoption = false },
+        },
+
+        faction = {
+            { id = 'all', text = ReadText(8008574, 220), icon = "", displayremoveoption = false },
+        },
+
+        type = {
+            { id = 2001, text = ReadText(8008574, 230), icon = "", displayremoveoption = false }, -- value
+            { id = 2002, text = ReadText(8008574, 231), icon = "", displayremoveoption = false }, -- distance
+            { id = 2003, text = ReadText(8008574, 232), icon = "", displayremoveoption = false }, -- intel
+        },
+    },
+
+    -- NOTE: `textproperty` widgets do not accept a `height` property; remove it
+    -- so we avoid "Tried to set non-existing property 'height' on widget of type 'textproperty'" errors.
+    styleProperties = {
+        font = Helper.standardFontMono,
+        scaling = true,
+        color = Helper.color.white,
+        y = Helper.scaleY(3),
+    },
+}
+
+local tables = {
+    settings = {},
+    bounties = {},
+}
+
+local headHunter = {}
+local wantedShipsList = {}
+
+local function init ()
+    headHunter.debugText("INIT")
+
+    mapMenu = Lib.Get_Egosoft_Menu("MapMenu")
+    headHunter.getKnownFactions()
+
+    mapMenu.registerCallback("ic_onSelectElement", headHunter.onSelectElement)
+    mapMenu.registerCallback("ic_onRowChanged", headHunter.onRowChanged)
+    mapMenu.registerCallback("createRightBar_on_start", headHunter.createRightBar)
+    mapMenu.registerCallback("createInfoFrame2_on_menu_infoModeRight", headHunter.createInfoFrame2_on_menu_infoModeRight)
+    mapMenu.registerCallback("refreshInfoFrame2_on_start", headHunter.refreshInfoFrame2_on_start)
+end
+
+function headHunter.buildWantedShipList()
+    wantedShipsList = {}
+
+    -- get the list of wanted ships
+    local xmlList = GetNPCBlackboard(playerId, config.blackboard.wantedShipsList) or {}
+
+    headHunter.debugText("Fetching ship list")
+
+    for index, xmlData in ipairs(xmlList) do
+        local output = {}
+
+        local ship = ConvertStringToLuaID(tostring(xmlData.ship))
+        local icon = GetComponentData(ship, "icon")
+        local sectorComponent = ConvertIDTo64Bit(xmlData.lastseensector)
+
+        local wantedShipFaction = GetComponentData(ship, "owner")
+
+        output.wantedShip = {
+            object = ship,
+            name = xmlData.name,
+            idcode = xmlData.idcode,
+            bounty = xmlData.value,
+            icon = icon,
+            lastSeen = {
+                time = xmlData.lastseentime,
+                sector = {
+                    component = sectorComponent,
+                    name = GetComponentData(xmlData.lastseensector, "name"),
+                    color = Helper.color.white,
+                    isKnown = true
+                }
+            },
+            faction = {
+                name = {
+                    short = GetFactionData(wantedShipFaction, "shortname"),
+                    full = GetFactionData(wantedShipFaction, "name")
+                },
+                color = GetFactionData(wantedShipFaction, "color")
+            }
+        }
+
+
+        if not C.IsKnownToPlayer(sectorComponent) then
+            -- disable double click to center on unknown sectors
+            output.wantedShip.lastSeen.sector.component = false
+            output.wantedShip.lastSeen.sector.name = ReadText(8008574, 300) -- unknown
+            output.wantedShip.lastSeen.sector.color = Helper.color.grey
+            output.wantedShip.lastSeen.sector.isKnown = false
+        end
+
+        output.victimFaction = {
+            object = xmlData.victimfaction,
+            name = {
+                short = GetFactionData(xmlData.victimfaction, "shortname"),
+                full = GetFactionData(xmlData.victimfaction, "name")
+            },
+            color = GetFactionData(xmlData.victimfaction, "color")
+        }
+
+        if not IsKnownItem("factions", xmlData.victimfaction) then
+            -- disable factions unknown to the player
+            output.victimFaction.name.full = ReadText(8008574, 300) -- unknown
+            output.victimFaction.name.short = "---"
+            output.victimFaction.color = Helper.color.grey
+        end
+
+        table.insert(wantedShipsList, output)
+    end
+
+    headHunter.filterByLocation();
+    headHunter.filterByFactions();
+    headHunter.sortShips();
+end
+
+function headHunter.createRightBar(globalConfig)
+    headHunter.debugText("Creating right bar")
+
+    local headHunterListExists
+    for _, rightBarEntry in ipairs(globalConfig.rightBar) do
+        if rightBarEntry.mode == config.mode then
+            headHunterListExists = true
+        end
+    end
+    if not headHunterListExists then
+        local entry = {
+            name = ReadText(8008574, 104),
+            icon = "mapst_headhunter",
+            mode = config.mode,
+        }
+        local rightBarLength = table.getn(globalConfig.rightBar)
+        table.insert(globalConfig.rightBar, rightBarLength - 2, entry)
+        headHunter.debugText("Creating icon")
+    end
+end
+
+function headHunter.refreshInfoFrame2_on_start()
+    if not mapMenu.createInfoFrame2Running then
+        if mapMenu.infoTableRight2 then
+            mapMenu.topRows.infotable2right = mapMenu.topRows.infotable2right or GetTopRow(mapMenu.infoTableRight2)
+            mapMenu.selectedRows.infotable2right = mapMenu.selectedRows.infotable2right or Helper.currentTableRow[mapMenu.infoTableRight2]
+        end
+    end
+end
+
+function headHunter.createInfoFrame2_on_menu_infoModeRight (infoFrame2)
+
+    if mapMenu.searchTableMode == config.mode then
+        headHunter.buildWantedShipList()
+
+        headHunter.buildSettingsTable(infoFrame2);
+        headHunter.buildBountiesTable(infoFrame2);
+
+        if mapMenu.selectedRows["infotable2right"] then
+            headHunter.debugText("Setting selected row 1", mapMenu.selectedRows["infotable2right"])
+            tables.bounties:setSelectedRow(mapMenu.selectedRows["infotable2right"])
+            mapMenu.selectedRows["infotable2right"] = nil
+            if mapMenu.topRows["infotable2right"] then
+                headHunter.debugText("Setting top row 1", mapMenu.topRows["infotable2right"])
+                tables.bounties:setTopRow(mapMenu.topRows["infotable2right"])
+                mapMenu.topRows["infotable2right"] = nil
+            end
+        end
+    end
+
+    return nil
+end
+
+function headHunter.buildSettingsTable(infoFrame2)
+    headHunter.debugText("Drawing headhunter settings table", mapMenu.searchTableMode)
+
+    tables.settings = infoFrame2:addTable(config.settingsTable.columnsNumber, { tabOrder = 1, highlightMode = "off", skipTabChange = true, multiSelect = false, backgroundID = "solid", backgroundColor = Helper.color.semitransparent, reserveScrollBar = false })
+    tables.settings:setColWidthMinPercent(1, 33)
+    tables.settings:setColWidthMinPercent(2, 33)
+    tables.settings:setColWidthMinPercent(3, 33)
+    tables.settings:setDefaultCellProperties("dropdown", { height = 20 })
+
+    local row = tables.settings:addRow(false, { bgColor = Helper.defaultTitleBackgroundColor })
+    row[1]:setColSpan(config.settingsTable.columnsNumber):createText(ReadText(8008574, 104), Helper.headerRowCenteredProperties) -- Sort settings
+
+
+    row = tables.settings:addRow("dropdown_elements")
+
+    local dropdownStyleProperties = headHunter.shallowCopy(config.styleProperties)
+    dropdownStyleProperties.y = Helper.scaleY(0)
+
+    row[1]:createDropDown(config.dropdownOptions.location, { startOption = config.settingsTable.sortStates.location }):setTextProperties(dropdownStyleProperties)
+    row[1].handlers.onDropDownActivated = function()
+        mapMenu.noupdate = true
+    end
+    row[1].handlers.onDropDownConfirmed = function(_, id)
+        config.settingsTable.sortStates.location = id;
+        return headHunter.filterByLocation()
+    end
+
+    -- faction dropdown
+    row[2]:createDropDown(config.dropdownOptions.faction, { startOption = config.settingsTable.sortStates.faction }):setTextProperties(dropdownStyleProperties)
+    row[2].handlers.onDropDownActivated = function()
+        mapMenu.noupdate = true
+    end
+    row[2].handlers.onDropDownConfirmed = function(_, id)
+        config.settingsTable.sortStates.faction = id;
+        return headHunter.filterByFactions()
+    end
+
+    -- type dropdown
+    row[3]:createDropDown(config.dropdownOptions.type, { startOption = config.settingsTable.sortStates.type }):setTextProperties(dropdownStyleProperties)
+    row[3].handlers.onDropDownActivated = function()
+        mapMenu.noupdate = true
+    end
+    row[3].handlers.onDropDownConfirmed = function(_, id)
+        config.settingsTable.sortStates.type = id;
+        return headHunter.sortShips()
+    end
+end
+
+function headHunter.getKnownFactions()
+    local factions = GetLibrary("factions")
+    table.sort(factions, Helper.sortName)
+
+    for i, faction in ipairs(factions) do
+        headHunter.printTable("faction", faction)
+        table.insert(config.dropdownOptions.faction, { id = faction.id, text = faction.name, icon = '', displayremoveoption = false })
+    end
+
+    return factions
+end
+
+function headHunter.buildBountiesTable(infoFrame2)
+    headHunter.debugText("Drawing headhunter bounties table", mapMenu.searchTableMode)
+
+    tables.bounties = infoFrame2:addTable(config.bountiesTable.columnsNumber, { tabOrder = 2, borderEnabled = true, backgroundID = "solid", backgroundColor = Helper.color.semitransparent, y = tables.settings.properties.y + tables.settings:getVisibleHeight() + Helper.borderSize, reserveScrollBar = true })
+    -- increase the icon column width so icons fit without overlapping
+    -- 20 was too narrow on some layouts; 40 is a safe wider default.
+    tables.bounties:setColWidth(1, Helper.scaleX(32), false)
+    tables.bounties:setColWidth(3, Helper.scaleX(90), false)
+    tables.bounties:setColWidth(4, Helper.scaleX(100), false)
+    tables.bounties:setColWidth(5, Helper.scaleX(60), false)
+    tables.bounties:setDefaultBackgroundColSpan(1, 4)
+
+    row = tables.bounties:addRow(false, { bgColor = Helper.defaultTitleBackgroundColor })
+
+    row[1]:createText(nil, Helper.headerRowCenteredProperties)
+    row[2]:createText(ReadText(8008574, 400), Helper.headerRowCenteredProperties)
+    row[3]:createText(ReadText(8008574, 401), Helper.headerRowCenteredProperties)
+    row[4]:createText(ReadText(8008574, 402), Helper.headerRowCenteredProperties)
+    row[5]:createText(ReadText(8008574, 403), Helper.headerRowCenteredProperties)
+
+    for index, data in ipairs(wantedShipsList) do
+        if (index > config.maxShips) then
+            -- trim the list to a reasonable size
+            break
+        end
+
+        row = tables.bounties:addRow(data.wantedShip.lastSeen.sector.component, { bgColor = Helper.color.transparent, borderBelow = false, interactive = true })
+        -- Detect parent cell width when possible and clamp icon size so it never exceeds the cell
+        -- (prevents "icon width exceeds parent" warnings). Fall back to a conservative hard maximum.
+        local plannedIconW = Helper.scaleX(config.icon.width)
+        local plannedIconH = Helper.scaleX(config.icon.height)
+        local parentW = nil
+        local ok, got = pcall(function() return row[1] and row[1].getWidth and row[1]:getWidth() end)
+        if ok and type(got) == 'number' and got > 0 then
+            parentW = got
+        elseif row[1] and row[1].properties and type(row[1].properties.width) == 'number' and row[1].properties.width > 0 then
+            parentW = row[1].properties.width
+        end
+
+        if parentW then
+            local availableW = parentW - Helper.scaleX(2) -- small margin
+            if plannedIconW > availableW then
+                plannedIconW = math.max(8, availableW)
+                plannedIconH = plannedIconW
+            end
+        else
+            -- if we can't detect parent width reliably, use a conservative maximum that avoids overlap
+            local hardMax = Helper.scaleX(12)
+            if plannedIconW > hardMax then
+                plannedIconW = hardMax
+                plannedIconH = plannedIconW
+            end
+        end
+        row[1]:createIcon(data.wantedShip.icon, { width = plannedIconW, height = plannedIconH, color = data.wantedShip.faction.color })
+
+        local nameTextProperties = headHunter.shallowCopy(config.styleProperties)
+        nameTextProperties.color = data.wantedShip.faction.color
+        row[2]:createText("(" .. data.wantedShip.idcode .. ") "..data.wantedShip.name, nameTextProperties)
+
+        local bountyTextProperties = headHunter.shallowCopy(config.styleProperties)
+        bountyTextProperties.halign = "right"
+        row[3]:createText(ConvertMoneyString(data.wantedShip.bounty, false, true, 0, true) .. 'Cr', bountyTextProperties)
+
+        local sectorTextProperties = headHunter.shallowCopy(config.styleProperties)
+        sectorTextProperties.color = data.wantedShip.lastSeen.sector.color
+        row[4]:createText(data.wantedShip.lastSeen.sector.name, sectorTextProperties)
+
+        local factionTextProperties = headHunter.shallowCopy(config.styleProperties)
+        factionTextProperties.color = data.victimFaction.color
+        factionTextProperties.halign = "center"
+        row[5]:createText(data.victimFaction.name.short, factionTextProperties)
+
+    end
+end
+
+function headHunter.filterByLocation()
+    for _, option in ipairs(config.dropdownOptions.location) do
+        if (config.settingsTable.sortStates.location == 'all') then
+            break
+        end
+        headHunter.debugText("Filtering by location: ", config.settingsTable.sortStates.location)
+        if (tostring(option.id) == config.settingsTable.sortStates.location) then
+            for i = #wantedShipsList, 1, -1 do
+                local data = wantedShipsList[i]
+                if not data.wantedShip.lastSeen.sector.isKnown then
+                    table.remove(wantedShipsList, i)
+                end
+            end
+        end
+    end
+
+    headHunter.resetStates()
+end
+
+function headHunter.filterByFactions()
+    for _, option in ipairs(config.dropdownOptions.faction) do
+        if (config.settingsTable.sortStates.faction == 'all') then
+            break
+        end
+        headHunter.debugText("Filtering by faction: ", config.settingsTable.sortStates.faction)
+        if (tostring(option.id) == config.settingsTable.sortStates.faction) then
+
+            for i = #wantedShipsList, 1, -1 do
+                local data = wantedShipsList[i]
+                if (data.victimFaction.object ~= option.id) then
+                    table.remove(wantedShipsList, i)
+                end
+            end
+        end
+    end
+
+    headHunter.resetStates()
+end
+
+function headHunter.sortShips()
+    headHunter.debugText("Sorting ships")
+    for _, option in ipairs(config.dropdownOptions.type) do
+        if (tonumber(option.id) == tonumber(config.settingsTable.sortStates.type)) then
+            if (tonumber(config.settingsTable.sortStates.type) == 2001) then
+                -- sort by value
+                table.sort(wantedShipsList, function(a, b)
+                    return headHunter.elementSorter(a.wantedShip.bounty, b.wantedShip.bounty, false)
+                end)
+            elseif (tonumber(config.settingsTable.sortStates.type) == 2002) then
+                -- sort by distance
+                table.sort(wantedShipsList, function(a, b)
+                    a = C.GetDistanceBetween(ConvertStringTo64Bit(tostring(a.wantedShip.object)), playerId)
+                    b = C.GetDistanceBetween(ConvertStringTo64Bit(tostring(b.wantedShip.object)), playerId)
+                    return headHunter.elementSorter(a, b, true)
+                end)
+            elseif (tonumber(config.settingsTable.sortStates.type) == 2003) then
+                -- sort by last intel
+                table.sort(wantedShipsList, function(a, b)
+                    return headHunter.elementSorter(a.wantedShip.lastSeen.time, b.wantedShip.lastSeen.time, false)
+                end)
+            end
+        end
+    end
+    headHunter.resetStates()
+end
+
+function headHunter.elementSorter(itemA, itemB, invert)
+    if (invert) then
+        return itemA < itemB
+    end
+
+    return itemA > itemB
+end
+
+function headHunter.resetStates()
+    if next(wantedShipsList) == nil then
+        headHunter.debugText("Wanted ships is empty ")
+        wantedShipsList = {}
+    end
+
+    mapMenu.noupdate = false
+    mapMenu.refreshInfoFrame2()
+end
+
+function headHunter.onSelectElement(uitable, modified, row, isdblclick, input)
+    local rowdata = Helper.getCurrentRowData(mapMenu, uitable)
+    if (uitable == mapMenu.infoTableRight2 and isdblclick and type(rowdata) == 'number') then
+        C.SetFocusMapComponent(mapMenu.holomap, rowdata, true)
+    end
+end
+
+function headHunter.onRowChanged(row, rowdata, uitable, modified, input, source)
+    if mapMenu.searchTableMode == config.mode then
+        mapMenu.noupdate = false
+    end
+end
+
+function headHunter.shallowCopy(original)
+    local copy = {}
+    for key, value in pairs(original) do
+        copy[key] = value
+    end
+    return copy
+end
+
+function headHunter.debugText(title, text)
+    if (isDebug) then
+        DebugError("ch.lua: " .. title .. ": " .. tostring(text))
+    end
+end
+
+function headHunter.printTable(name, table)
+    if (isDebug) then
+        DebugError("ch.lua: Printing table " .. tostring(name))
+        Lib.Print_Table(table)
+    end
+end
+init()
+

@@ -43,5 +43,16 @@
     	<t id="139">Disabled</t>
 		<t id="140">Proximity Notify Value Threshold</t>
 		<t id="141">Only be notified when a wanted bounty of at least this value is within distance of a player ship</t>
+	  	<t id="210">Show all locations</t>
+	    <t id="211">Only known sectors</t>
+	    <t id="220">Show all factions</t>
+	    <t id="230">Sort by bounty value</t>
+	    <t id="231">Sort by distance</t>
+	    <t id="232">Sort by last intel</t>
+	    <t id="300">Unknown sector</t>
+	  	<t id="400">Wanted ship</t>
+	  	<t id="401">Reward</t>
+	  	<t id="402">Last spotted</t>
+	  	<t id="403">Wanted by</t>
   </page>
 </language>

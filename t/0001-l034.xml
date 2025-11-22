@@ -43,5 +43,16 @@
     <t id="139">Deshabilitado</t>
     <t id="140">Umbral de valor de notificación de proximidad</t>
     <t id="141">Solo se le notificará cuando una recompensa buscada de al menos este valor esté dentro de la distancia de un barco de jugador</t>
+    <t id="210">Mostrar todas las ubicaciones</t>
+    <t id="211">Solo sectores conocidos</t>
+    <t id="220">Mostrar todas las facciones</t>
+    <t id="230">Ordenar por valor de recompensa</t>
+    <t id="231">Ordenar por distancia</t>
+    <t id="232">Ordenar por último informe</t>
+    <t id="300">Sector desconocido</t>
+    <t id="400">Nave buscada</t>
+    <t id="401">Recompensa</t>
+    <t id="402">Última detección</t>
+    <t id="403">Buscado por</t>
   </page>
 </language>

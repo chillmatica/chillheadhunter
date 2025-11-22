@@ -43,5 +43,16 @@
     <t id="139">Deaktiviert</t>
     <t id="140">Proximity Notify Value Threshold</t>
     <t id="141">Wird nur benachrichtigt, wenn sich ein gesuchtes Kopfgeld von mindestens diesem Wert in der Nähe eines Spielerschiffs befindet</t>
+    <t id="210">Alle Standorte anzeigen</t>
+    <t id="211">Nur bekannte Sektoren</t>
+    <t id="220">Alle Fraktionen anzeigen</t>
+    <t id="230">Nach Kopfgeldwert sortieren</t>
+    <t id="231">Nach Entfernung sortieren</t>
+    <t id="232">Nach letzter Intel sortieren</t>
+    <t id="300">Unbekannter Sektor</t>
+    <t id="400">Gesuchtes Schiff</t>
+    <t id="401">Belohnung</t>
+    <t id="402">Zuletzt gesichtet</t>
+    <t id="403">Gesucht von</t>
   </page>
 </language>

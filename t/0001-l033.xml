@@ -43,5 +43,16 @@
     <t id="139">Désactivé</t>
     <t id="140">Seuil de valeur de notification de proximité</t>
     <t id="141">Ne soyez averti que lorsqu'une prime recherchée d'au moins cette valeur se trouve à distance d'un navire de joueur</t>
+    <t id="210">Afficher toutes les localisations</t>
+    <t id="211">Seulement les secteurs connus</t>
+    <t id="220">Afficher toutes les factions</t>
+    <t id="230">Trier par valeur de prime</t>
+    <t id="231">Trier par distance</t>
+    <t id="232">Trier par dernières informations</t>
+    <t id="300">Secteur inconnu</t>
+    <t id="400">Navire recherché</t>
+    <t id="401">Récompense</t>
+    <t id="402">Dernière localisation</t>
+    <t id="403">Recherché par</t>
   </page>
 </language>
