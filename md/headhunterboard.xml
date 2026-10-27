@@ -140,15 +140,15 @@
 							]"/>
                         <do_if value="global.$HHSortValue == 2">
                             <set_value name="$buttontext" exact="{8008574,125}" />
-                            <set_value name="$buttoncolor" exact="'Helper.color.green'" />
+                            <set_value name="$buttoncolor" exact="'Color.text_positive'" />
                         </do_if>
                         <do_elseif value="global.$HHSortValue == 3">
                             <set_value name="$buttontext" exact="{8008574,126}" />
-                            <set_value name="$buttoncolor" exact="'Helper.color.red'" />
+                            <set_value name="$buttoncolor" exact="'Color.text_negative'" />
                         </do_elseif>
                         <do_elseif value="global.$HHSortValue == 4">
                             <set_value name="$buttontext" exact="{8008574,127}" />
-                            <set_value name="$buttoncolor" exact="'Helper.color.brightyellow'" />
+                            <set_value name="$buttoncolor" exact="'Color.text_warning'" />
                         </do_elseif>
                         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Button"
                             param="table[
@@ -242,7 +242,7 @@
 								$colSpan = event.param.$columns,
 								$height = 1,
 								$fontsize = 1,
-								$cellBGColor = 'Helper.color.darkorange',
+								$cellBGColor = 'Color.text_warning',
 							]"/>
 					</actions>
 				</library>

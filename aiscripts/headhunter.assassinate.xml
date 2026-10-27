@@ -126,13 +126,14 @@
 					<edit_order_param order="this.assignedcontrolled.defaultorder"
 						param="'searchingstart'" value="player.age" />
 				</do_if>
+				<set_value name="$campingspots" exact="[]" />
 				<find_zone name="$campingspots" space="this.sector" normalzone="true"
 					multiple="true" append="true" />
 				<find_gate name="$campingspots" space="this.sector" multiple="true" append="true" />
 				<find_station name="$campingspots" space="this.sector" multiple="true" append="true" >
 					<match_relation_to relation="neutral" comparison="ge" object="this.assignedcontrolled"/>
 				</find_station>
-				<do_if value="$campingspots.count == 0 or null">
+				<do_if value="not $campingspots.count">
 					<debug_text
 						text="'HeadHunter AI Brain - targetpos was null. Sector: %s, CampingSpots var: %s '.[this.sector.knownname,$campingspots]"
 						filter="error" chance= "$HunterAIDebug"/>

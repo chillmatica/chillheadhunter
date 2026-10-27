@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <language id="7">
   <page id="8008574" title="Head Hunter T Files" descr="Russian" voice="no">
-    <t id="100">NPC Wanted Claim Notifications</t>
 	<t id="100">Уведомления о розыске NPC</t>
 	<t id="101">Получать уведомления о неигровых персонажах, требующих розыска.</t>
 	<t id="102">Уведомления о приближении к разыскиваемому кораблю</t>

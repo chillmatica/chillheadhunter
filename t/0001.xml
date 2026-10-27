@@ -37,7 +37,7 @@
 		<t id="133">%s %s was destroyed in %s by %s\nBounty value: %s credits</t>
 		<t id="134">HEAD CLAIMED! %s was destroyed in %s by %s\nBounty value: %s credits</t>
 		<t id="135">Wanted Ship Nearby!\n%s %s worth %s credits</t>
-		<t id="136">Wanted Ship Spotted\nLocation: %s\n%s %s worth %s credits</t>
+		<t id="136">Wanted Ship Spotted in %s\nShip: %s %s\nBounty: %s credits</t>
 		<t id="137">Payoff Bounty for %s %s: %s Cr</t>
 		<t id="138">Enabled</t>
 		<t id="139">Disabled</t>

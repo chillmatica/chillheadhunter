@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="ChillHeadHunter" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
     <cues>
+        <cue name="OnLuaLoaderReady">
+            <conditions>
+                <event_ui_triggered screen="'Lua_Loader'" control="'Ready'"/>
+            </conditions>
+            <actions>
+                <raise_lua_event name="'Lua_Loader.Load'" param="'extensions.kuertee_ui_extensions.ui.kuertee_menu_map'"/>
+                <raise_lua_event name="'Lua_Loader.Load'" param="'extensions.chillheadhunter.ch'"/>
+            </actions>
+        </cue>
+
+        <cue name="OnLuaLoaderReadyCompleted">
+            <conditions>
+                <event_cue_completed cue="OnLuaLoaderReady"/>
+            </conditions>
+            <actions>
+                <reset_cue cue="OnLuaLoaderReady"/>
+                <reset_cue cue="this"/>
+            </actions>
+        </cue>
+
         <cue name="LoadStuffAndSetup" version="7">
 			<conditions>
 				<event_universe_generated/>
@@ -98,7 +118,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterNPCNotify == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterNPCNotify == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterNPCNotify == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = HHNotifyToggle,
@@ -118,7 +138,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterProximityNotify == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterProximityNotify == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterProximityNotify == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = ProximityNotifyToggle,
@@ -157,7 +177,7 @@
                                     $colSpan = 1,
                                     $text = table[
                                       $text   =  if global.$HeadHunterPayoutNotify == true then {8008574,138} else {8008574,139}, 
-                                      $color  =  if global.$HeadHunterPayoutNotify == true then 'Helper.color.green' else 'Helper.color.red',
+                                      $color  =  if global.$HeadHunterPayoutNotify == true then 'Color.text_positive' else 'Color.text_negative',
                                       $halign = 'center',
                                     ],
                                     $onClick = PayoutNotifyToggle,
@@ -177,7 +197,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterPlayerMapTag == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterPlayerMapTag == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterPlayerMapTag == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = PlayerMapTagToggle,
@@ -197,7 +217,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterHuntersEnabled == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterHuntersEnabled == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterHuntersEnabled == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = HuntersToggle,
@@ -217,7 +237,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterClassicBaddies == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterClassicBaddies == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterClassicBaddies == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = ClassicBaddiesToggle,
@@ -237,7 +257,7 @@
 								$colSpan = 1,
 								$text = table[
 								  $text   =  if global.$HeadHunterBoardHunters == true then {8008574,138} else {8008574,139}, 
-								  $color  =  if global.$HeadHunterBoardHunters == true then 'Helper.color.green' else 'Helper.color.red',
+								  $color  =  if global.$HeadHunterBoardHunters == true then 'Color.text_positive' else 'Color.text_negative',
 								  $halign = 'center',
 								],
 								$onClick = BoardHuntersToggle,
@@ -257,7 +277,7 @@
                                     $colSpan = 1,
                                     $text = table[
                                       $text   =  if global.$HeadHunterGainReputation == true then {8008574,138} else {8008574,139}, 
-                                      $color  =  if global.$HeadHunterGainReputation == true then 'Helper.color.green' else 'Helper.color.red',
+                                      $color  =  if global.$HeadHunterGainReputation == true then 'Color.text_positive' else 'Color.text_negative',
                                       $halign = 'center',
                                     ],
                                     $onClick = GainRepToggle,
@@ -307,7 +327,7 @@
                                     $colSpan = 1,
                                     $text = table[
                                     $text   =  {8008574,119}, 
-                                    $color  =  'Helper.color.red',
+                                    $color  =  'Color.text_negative',
                                     $halign = 'center',
                                     ],
                                     $onClick = ClearWantedBoard,
@@ -328,7 +348,7 @@
                                     $colSpan = 1,
                                     $text = table[
                                     $text   =  {8008574,121}, 
-                                    $color  =  'Helper.color.white',
+                                    $color  =  'Color.text_normal',
                                     $halign = 'center',
                                     ],
                                     $onClick = PrintWantedBoard,

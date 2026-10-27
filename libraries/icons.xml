@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <diff>
   <add sel="/icons">
-    <icon name="order_headhunter" texture="assets\fx\gui\textures\order\order_board.tga" height="32" width="32"></icon>
+    <icon name="mapst_headhunter" texture="extensions\chillheadhunter\assets\fx\gui\textures\map_sidebar_tabs\mapst_headhunter.tga" height="128" width="128"/>
+    <icon name="order_headhunter" texture="assets\textures\ui\order\order_board.tga" height="32" width="32"></icon>
   </add>
 </diff>
