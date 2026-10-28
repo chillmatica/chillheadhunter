@@ -454,7 +454,7 @@
         <cue name="MapTagger" instantiate="true">
             <conditions>
                 <event_ui_triggered screen="'MapMenu'"/>
-                <check_value value="event.param != 'menu_close'" comment="add_holomap_text errors when the map is not open"/>
+                <check_value value="player.holomap.isopen" comment="add_holomap_text errors when the map is not open"/>
             </conditions>
             <actions>
                 <signal_cue_instantly cue="BuildHunterLuaTable"/>
