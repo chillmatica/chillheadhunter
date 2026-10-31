@@ -41,6 +41,9 @@
             <actions>
                 <set_value name="$enemy" exact="event.param.{1}" />
                 <set_value name="$attacker" exact="event.param.{2}" />
+                <set_value name="$attackeridcode" exact="event.param.{2}.idcode" />
+                <set_value name="$attackerknownname" exact="event.param.{2}.knownname" />
+                <set_value name="$attackersectorname" exact="event.param.{2}.sector.knownname" />
                 <set_value name="$enemyhealthdeath" exact="$enemy.shield + $enemy.hull" />
                 <set_value name="$reputationcalc" exact="event.param.{3}" />
                 <set_value name="$HHDebug" exact="0" />
@@ -78,12 +81,23 @@
                                 <set_value name="$rewardmodified" exact="$reward*global.$HeadHunterBountyMultiplier" />
                                 <set_value name="$rewardCr" exact="($rewardmodified)Cr" />
                             <debug_to_file name="'bounties'" directory="'HeadHunter'"
-                                           text="'HeadHunter: %s got a bounty. Killed %s %s. Original Amount: %s Modified by BM: %s rewards %s total '.[$attacker.knownname,$enemy.knownname,$enemy.idcode,$reward,global.$HeadHunterBountyMultiplier,$rewardmodified]"
+                                           text="'HeadHunter: %s got a bounty. Killed %s %s. Original Amount: %s Modified by BM: %s rewards %s total '.[$attackerknownname,$enemy.knownname,$enemy.idcode,$reward,global.$HeadHunterBountyMultiplier,$rewardmodified]"
                                     output="true" append="true" chance="$HHDebug" />
-                            <write_to_logbook category="alerts"
-                                              title="{8008574,128}"
-                                              text="{8008574,129}.[$attacker.idcode,$attacker.knownname,$enemy.idcode,$enemy.knownname,$attacker.sector.knownname,$payer,$rewardmodified]"
-                                    interaction="showonmap" object="$attacker" money="($reward)Cr" bonus="($rewardmodified)Cr-($reward)Cr" />
+                            <do_if value="$attacker.exists">
+                                <do_if value="$attacker.sector.exists">
+                                    <set_value name="$attackersectorname" exact="$attacker.sector.knownname" />
+                                </do_if>
+                                <write_to_logbook category="alerts"
+                                                  title="{8008574,128}"
+                                                  text="{8008574,129}.[$attackeridcode,$attackerknownname,$enemy.idcode,$enemy.knownname,$attackersectorname,$payer,$rewardmodified]"
+                                        interaction="showonmap" object="$attacker" money="($reward)Cr" bonus="($rewardmodified)Cr-($reward)Cr" />
+                            </do_if>
+                            <do_else>
+                                <write_to_logbook category="alerts"
+                                                  title="{8008574,128}"
+                                                  text="{8008574,129}.[$attackeridcode,$attackerknownname,$enemy.idcode,$enemy.knownname,$attackersectorname,$payer,$rewardmodified]"
+                                        money="($reward)Cr" bonus="($rewardmodified)Cr-($reward)Cr" />
+                            </do_else>
                                 <transfer_money from="faction.civilian" to="faction.player" amount="$rewardCr" comment="doesnt really matter where it comes from as the payer isnt logged" />
                         </do_if>
                         <cancel_cue cue="Watcher" />

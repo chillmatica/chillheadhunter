@@ -2,6 +2,9 @@ local ffi = require("ffi")
 local C = ffi.C
 local Lib = require("extensions.sn_mod_support_apis.lua_interface").Library
 
+-- Older kuertee UI Extensions ship the map menu hooks as a separate module; current ones build them into menu_map.xpl.
+pcall(require, "extensions.kuertee_ui_extensions.ui.kuertee_menu_map")
+
 local isDebug = false
 local playerId = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
 
@@ -225,6 +228,7 @@ function headHunter.buildSettingsTable(infoFrame2)
 
     local dropdownStyleProperties = headHunter.shallowCopy(config.styleProperties)
     dropdownStyleProperties.y = Helper.scaleY(0)
+    dropdownStyleProperties.height = nil -- 9.0 textproperty has no 'height'; row height comes from setDefaultCellProperties
 
     row[1]:createDropDown(config.dropdownOptions.location, { startOption = config.settingsTable.sortStates.location }):setTextProperties(dropdownStyleProperties)
     row[1].handlers.onDropDownActivated = function()

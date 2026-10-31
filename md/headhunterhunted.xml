@@ -308,7 +308,7 @@
                         </check_any>
                     </conditions>
                     <actions>
-                        <do_if value="event.object == $playertarget">
+                        <do_if value="$playertarget? and event.object == $playertarget">
                             <debug_text text="'HeadHunter: Player target died. Cancel hostiles'" filter="scripts" chance="Init.$HuntedDebug"/>
                             <do_for_each name="$hunterr" in="global.$HHHunters">
                                     <find_station space="event.object.sector" name="$parkstations" multiple="true" owner="faction.player" negateownerfilter="true"/>
